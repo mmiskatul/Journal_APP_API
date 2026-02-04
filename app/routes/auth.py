@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
-from app.models.user import UserCreate, UserResponse, TokenResponse
+from app.models.users import UserCreate, UserResponse, TokenResponse
 from app.crud import user as crud
 from app.auth import auth_handler
 from fastapi import Request
