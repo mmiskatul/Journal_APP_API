@@ -1,6 +1,7 @@
 from datetime import date, datetime, timezone
 
 from fastapi import HTTPException
+from pymongo import ReturnDocument
 
 from app.core.mongo import serialize_id, to_object_id
 
@@ -56,7 +57,7 @@ def update_entry(db, entry_id: str, user: dict, data: dict) -> dict:
     result = db.journal_entries.find_one_and_update(
         {"_id": to_object_id(entry_id), "user_id": user["id"]},
         {"$set": update},
-        return_document=True,
+        return_document=ReturnDocument.AFTER,
     )
     if not result:
         raise HTTPException(status_code=404, detail="Journal entry not found")
