@@ -1,11 +1,12 @@
 from fastapi import APIRouter
 
-from app.api.routes import admin, ai, auth, goals, journals, moods, pages, settings, subscriptions, users
+from app.api.routes import admin, affirmations, ai, auth, goals, journals, moods, pages, settings, subscriptions, users
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
+api_router.include_router(affirmations.router, prefix="/affirmations", tags=["affirmations"])
 api_router.include_router(journals.router, prefix="/journals", tags=["journals"])
 api_router.include_router(moods.router, prefix="/moods", tags=["moods"])
 api_router.include_router(goals.router, prefix="/goals", tags=["goals"])
