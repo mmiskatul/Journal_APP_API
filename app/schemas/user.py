@@ -22,7 +22,7 @@ class UserProfileUpdate(BaseModel):
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     email: EmailStr
     is_active: bool
     is_admin: bool

@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 class UserAdminOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     email: EmailStr
     is_active: bool
     is_admin: bool
@@ -34,8 +34,8 @@ class AnalyticsOut(BaseModel):
 class AuditLogOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    user_id: int | None
+    id: str
+    user_id: str | None
     action: str
     ip_address: str | None = None
     user_agent: str | None = None

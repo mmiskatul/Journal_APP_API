@@ -20,7 +20,7 @@ class JournalUpdate(BaseModel):
 class JournalOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     title: str
     content: str
     category: str | None = None

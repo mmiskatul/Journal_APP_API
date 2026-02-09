@@ -23,7 +23,7 @@ class GoalStatusUpdate(BaseModel):
 class GoalOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     title: str
     description: str | None = None
     status: str

@@ -13,7 +13,7 @@ class MoodCreate(BaseModel):
 class MoodOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     mood: str
     intensity: int | None = None
     notes: str | None = None
