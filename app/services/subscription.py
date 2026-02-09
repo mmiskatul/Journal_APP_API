@@ -2,11 +2,9 @@ from datetime import datetime, timezone
 
 import stripe
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models.subscription import Subscription
-from app.models.user import User
+from app.core.mongo import serialize_id
 
 stripe.api_key = settings.stripe_api_key
 
@@ -28,7 +26,7 @@ def get_plans() -> list[dict]:
     ]
 
 
-def create_checkout_session(db: Session, user: User, plan_id: str) -> str:
+def create_checkout_session(db, user: dict, plan_id: str) -> str:
     plans = {plan["id"]: plan for plan in get_plans()}
     if plan_id not in plans:
         raise HTTPException(status_code=400, detail="Invalid plan")
@@ -49,7 +47,7 @@ def create_checkout_session(db: Session, user: User, plan_id: str) -> str:
     return session.url
 
 
-def handle_webhook(db: Session, payload: bytes, sig_header: str | None) -> None:
+def handle_webhook(db, payload: bytes, sig_header: str | None) -> None:
     if not settings.stripe_webhook_secret:
         raise HTTPException(status_code=500, detail="Stripe webhook secret not configured")
 
@@ -65,53 +63,46 @@ def handle_webhook(db: Session, payload: bytes, sig_header: str | None) -> None:
         if subscription.get("items") and subscription["items"]["data"]:
             price_id = subscription["items"]["data"][0]["price"]["id"]
 
-        user = db.query(User).filter(User.email == email).first()
+        user = db.users.find_one({"email": email})
         if not user:
             return
+        sub = db.subscriptions.find_one({"user_id": str(user["_id"])})
+        update = {
+            "user_id": str(user["_id"]),
+            "stripe_customer_id": customer_id,
+            "stripe_subscription_id": subscription.get("id"),
+            "plan_id": price_id,
+            "status": status or "inactive",
+            "current_period_end": current_period_end,
+            "updated_at": datetime.now(timezone.utc),
+        }
+        if sub:
+            db.subscriptions.update_one({"_id": sub["_id"]}, {"$set": update})
+        else:
+            db.subscriptions.insert_one(update)
 
-        sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
-        if not sub:
-            sub = Subscription(user_id=user.id)
-
-        sub.stripe_customer_id = customer_id
-        sub.stripe_subscription_id = subscription.get("id")
-        sub.plan_id = price_id
-        sub.status = status or "inactive"
-        sub.current_period_end = current_period_end
-
-        user.is_premium = status == "active"
-
-        db.add(sub)
-        db.add(user)
-        db.commit()
+        db.users.update_one({"_id": user["_id"]}, {"$set": {"is_premium": status == "active"}})
 
     if event["type"] == "customer.subscription.deleted":
         subscription = event["data"]["object"]
         customer_id = subscription.get("customer")
 
-        sub = db.query(Subscription).filter(Subscription.stripe_customer_id == customer_id).first()
+        sub = db.subscriptions.find_one({"stripe_customer_id": customer_id})
         if sub:
-            sub.status = "canceled"
-            if sub.user:
-                sub.user.is_premium = False
-                db.add(sub.user)
-            db.add(sub)
-            db.commit()
+            db.subscriptions.update_one({"_id": sub["_id"]}, {"$set": {"status": "canceled"}})
+            db.users.update_one({"_id": sub.get("user_id")}, {"$set": {"is_premium": False}})
 
 
-def get_subscription(db: Session, user: User) -> Subscription | None:
-    return db.query(Subscription).filter(Subscription.user_id == user.id).first()
+def get_subscription(db, user: dict) -> dict | None:
+    sub = db.subscriptions.find_one({"user_id": user["id"]})
+    return serialize_id(sub) if sub else None
 
 
-def cancel_subscription(db: Session, user: User) -> None:
-    sub = get_subscription(db, user)
-    if not sub or not sub.stripe_subscription_id:
+def cancel_subscription(db, user: dict) -> None:
+    sub = db.subscriptions.find_one({"user_id": user["id"]})
+    if not sub or not sub.get("stripe_subscription_id"):
         raise HTTPException(status_code=404, detail="Subscription not found")
 
-    stripe.Subscription.delete(sub.stripe_subscription_id)
-    sub.status = "canceled"
-    user.is_premium = False
-
-    db.add(sub)
-    db.add(user)
-    db.commit()
+    stripe.Subscription.delete(sub["stripe_subscription_id"])
+    db.subscriptions.update_one({"_id": sub["_id"]}, {"$set": {"status": "canceled"}})
+    db.users.update_one({"_id": sub["user_id"]}, {"$set": {"is_premium": False}})
