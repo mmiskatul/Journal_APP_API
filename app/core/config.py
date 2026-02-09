@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
-    database_url: str = "postgresql+psycopg2://postgres:postgres@db:5432/wellness"
+    mongodb_uri: str = "mongodb://localhost:27017"
+    mongodb_dbname: str = "wellness"
 
     stripe_api_key: str = ""
     stripe_webhook_secret: str = ""
