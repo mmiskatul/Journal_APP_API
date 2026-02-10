@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from secrets import token_urlsafe
 
 from fastapi import HTTPException
+from pymongo import ReturnDocument
 
 from app.core.mongo import serialize_id, to_object_id
 from app.core.security import get_password_hash
@@ -17,7 +18,7 @@ def suspend_user(db, user_id: str, days: int) -> dict:
     user = db.users.find_one_and_update(
         {"_id": to_object_id(user_id)},
         {"$set": {"suspended_until": suspended_until}},
-        return_document=True,
+        return_document=ReturnDocument.AFTER,
     )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
