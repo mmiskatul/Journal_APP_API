@@ -26,7 +26,12 @@ def get_current_user(db=Depends(get_db), token: str = Depends(oauth2_scheme)) ->
     if user_id is None:
         raise credentials_exception
 
-    user = db.users.find_one({"_id": to_object_id(user_id)})
+    try:
+        object_id = to_object_id(user_id)
+    except Exception:
+        raise credentials_exception
+
+    user = db.users.find_one({"_id": object_id})
     if not user:
         raise credentials_exception
 

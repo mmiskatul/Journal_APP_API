@@ -10,5 +10,6 @@ def to_object_id(value: str | ObjectId) -> ObjectId:
 def serialize_id(doc: dict) -> dict:
     if not doc:
         return doc
-    doc["id"] = str(doc.pop("_id"))
+    if "_id" in doc:
+        doc["id"] = str(doc.pop("_id"))
     return doc
