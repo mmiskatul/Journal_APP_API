@@ -4,7 +4,7 @@ import stripe
 from fastapi import HTTPException
 
 from app.core.config import settings
-from app.core.mongo import serialize_id
+from app.core.mongo import serialize_id, to_object_id
 
 stripe.api_key = settings.stripe_api_key
 
@@ -90,7 +90,8 @@ def handle_webhook(db, payload: bytes, sig_header: str | None) -> None:
         sub = db.subscriptions.find_one({"stripe_customer_id": customer_id})
         if sub:
             db.subscriptions.update_one({"_id": sub["_id"]}, {"$set": {"status": "canceled"}})
-            db.users.update_one({"_id": sub.get("user_id")}, {"$set": {"is_premium": False}})
+            if sub.get("user_id"):
+                db.users.update_one({"_id": to_object_id(sub["user_id"])}, {"$set": {"is_premium": False}})
 
 
 def get_subscription(db, user: dict) -> dict | None:
@@ -105,4 +106,4 @@ def cancel_subscription(db, user: dict) -> None:
 
     stripe.Subscription.delete(sub["stripe_subscription_id"])
     db.subscriptions.update_one({"_id": sub["_id"]}, {"$set": {"status": "canceled"}})
-    db.users.update_one({"_id": sub["user_id"]}, {"$set": {"is_premium": False}})
+    db.users.update_one({"_id": to_object_id(sub["user_id"])}, {"$set": {"is_premium": False}})
