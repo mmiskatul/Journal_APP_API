@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
@@ -18,7 +17,7 @@ def plans():
 @router.post("/checkout")
 def checkout(
     payload: CheckoutRequest,
-    db: Session = Depends(get_db),
+    db=Depends(get_db),
     current_user=Depends(get_current_active_user),
 ):
     url = subscription_service.create_checkout_session(db, current_user, payload.plan_id)
@@ -26,7 +25,7 @@ def checkout(
 
 
 @router.post("/webhook")
-async def webhook(request: Request, db: Session = Depends(get_db)):
+async def webhook(request: Request, db=Depends(get_db)):
     payload = await request.body()
     signature = request.headers.get("stripe-signature")
     subscription_service.handle_webhook(db, payload, signature)
@@ -34,7 +33,7 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/status", response_model=SubscriptionOut)
-def status(db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def status(db=Depends(get_db), current_user=Depends(get_current_active_user)):
     sub = subscription_service.get_subscription(db, current_user)
     if not sub:
         return SubscriptionOut(status="inactive")
@@ -42,6 +41,6 @@ def status(db: Session = Depends(get_db), current_user=Depends(get_current_activ
 
 
 @router.post("/cancel", response_model=Message)
-def cancel(db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def cancel(db=Depends(get_db), current_user=Depends(get_current_active_user)):
     subscription_service.cancel_subscription(db, current_user)
     return Message(message="Subscription canceled")

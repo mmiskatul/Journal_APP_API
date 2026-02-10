@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
@@ -18,7 +17,7 @@ def get_me(current_user=Depends(get_current_active_user)):
 @router.put("/me", response_model=UserOut)
 def update_profile(
     payload: UserProfileUpdate,
-    db: Session = Depends(get_db),
+    db=Depends(get_db),
     current_user=Depends(get_current_active_user),
 ):
     user = user_service.update_profile(db, current_user, payload.model_dump())
@@ -28,7 +27,7 @@ def update_profile(
 @router.post("/change-password", response_model=Message)
 def change_password(
     payload: ChangePasswordRequest,
-    db: Session = Depends(get_db),
+    db=Depends(get_db),
     current_user=Depends(get_current_active_user),
 ):
     user_service.change_password(db, current_user, payload.current_password, payload.new_password)
