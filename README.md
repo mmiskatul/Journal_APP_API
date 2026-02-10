@@ -1,6 +1,13 @@
 # Mental Wellness API (FastAPI + MongoDB)
 
-## Quick start
+## Quick start (local)
+1. Copy `.env.example` to `.env` and fill in your MongoDB URI, JWT secret, Stripe, and OpenAI keys.
+2. Install dependencies: `pip install -r requirements.txt`.
+3. Run: `python run.py`.
+4. Open Swagger UI at `http://localhost:8000/docs`.
+5. Health check: `GET http://localhost:8000/health`.
+
+## Quick start (Docker)
 1. Update `.env`.
 2. Run `docker-compose up --build`.
 3. Open Swagger UI at `http://localhost:8000/docs`.
